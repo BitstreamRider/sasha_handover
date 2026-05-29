@@ -10,9 +10,10 @@ import sys
 from std_srvs.srv import Empty
 from hsrb_interface import Robot
 from geometry_msgs.msg import WrenchStamped
-from tmc_manipulation_msgs.srv import SafeJointChange, SafeJointChangeRequest
+from tmc_manipulation_msgs.srv import SafeJointChange
 from sensor_msgs.msg import JointState
-import rospy
+import rclpy
+from rclpy.node import Node
 
 
 class Handover(object):

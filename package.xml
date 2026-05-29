@@ -1,22 +1,23 @@
 <?xml version="1.0"?>
-<package format="2">
-  <name>handover</name>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>sasha_handover</name>
   <version>0.0.0</version>
-  <description>The handover package</description>
+  <description>TODO: Package description</description>
+  <maintainer email="example@eamil.com">root</maintainer>
+  <license>TODO: License declaration</license>
 
-  <maintainer email="markus.j.leitner@tuwien.ac.at">Markus Leitner</maintainer>
-
-  <license>BSD</license>
-  
-  <depend>actionlib</depend>
-  <depend>actionlib_msgs</depend>
+  <test_depend>ament_copyright</test_depend>
+  <test_depend>ament_flake8</test_depend>
+  <test_depend>ament_pep257</test_depend>
+  <test_depend>python3-pytest</test_depend>
+  <depend>action_msgs</depend>
   <depend>geometry_msgs</depend>
-  <depend>grasping_pipeline_msgs</depend>
-  <depend>hsrb_interface_py</depend>
   <depend>sensor_msgs</depend>
+  <depend>std_msgs</depend>
   <depend>tmc_manipulation_msgs</depend>
-  <build_depend>message_generation</build_depend>
-  <exec_depend>message_runtime</exec_depend>
-  <buildtool_depend>catkin</buildtool_depend>
 
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
 </package>

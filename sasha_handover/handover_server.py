@@ -20,7 +20,7 @@ from std_srvs.srv import Empty
 from tmc_manipulation_msgs.srv import SafeJointChange
 from rclpy.qos import qos_profile_sensor_data
 
-from handover_msgs.action import Handover
+from grasping_pipeline_msgs.action import Handover
 
 
 class HandoverServer(Node):

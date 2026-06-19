@@ -27,8 +27,8 @@ class HandoverServer(Node):
     def __init__(self):
         super().__init__('handover_server')
         self.get_logger().info("starting handover server")
-        self.declare_parameter('dataset', 'ycb_ichores')
-        self.dataset = self.get_parameter('dataset')
+        self.declare_parameter('grasping_pipeline.dataset', 'ycb_ichores')
+        self.dataset = self.get_parameter('grasping_pipeline.dataset')
         try:
             package_path = get_package_share_directory('grasping_pipeline')
             config_path = Path(package_path + '/config/object_mapping.yaml')
@@ -67,9 +67,9 @@ class HandoverServer(Node):
         # Subscribe force torque sensor data from HSRB
         ft_sensor_topic = '/wrist_wrench/raw'
         self._wrist_wrench_sub = self.create_subscription(WrenchStamped, ft_sensor_topic, callback = self.__ft_sensor_cb, qos_profile=qos_profile_sensor_data)
-        self.declare_parameter('use_fancy_handover', False)
-        if self.has_parameter('/handover/use_fancy_handover'):
-            self.use_fancy_handover = self.get_param('use_fancy_handover')
+        self.declare_parameter('handover.use_fancy_handover', False)
+        if self.has_parameter('handover.use_fancy_handover'):
+            self.use_fancy_handover = self.get_param('handover.use_fancy_handover')
         else:
             self.use_fancy_handover = True
 

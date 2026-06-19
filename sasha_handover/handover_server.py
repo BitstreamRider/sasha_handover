@@ -69,7 +69,7 @@ class HandoverServer(Node):
         self._wrist_wrench_sub = self.create_subscription(WrenchStamped, ft_sensor_topic, callback = self.__ft_sensor_cb, qos_profile=qos_profile_sensor_data)
         self.declare_parameter('handover.use_fancy_handover', False)
         if self.has_parameter('handover.use_fancy_handover'):
-            self.use_fancy_handover = self.get_param('handover.use_fancy_handover')
+            self.use_fancy_handover = self.get_parameter('handover.use_fancy_handover').value
         else:
             self.use_fancy_handover = True
 

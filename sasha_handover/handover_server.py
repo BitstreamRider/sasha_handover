@@ -9,10 +9,11 @@ from pathlib import Path
 import yaml
 import sys
 import time
+import asyncio
 
 import rclpy
 from rclpy.action import ActionServer
-from rclpy.node import Node
+from rclpy.node import Node, MutuallyExclusiveCallbackGroup
 from geometry_msgs.msg import WrenchStamped
 from hsrb_interface import Robot
 from sensor_msgs.msg import JointState
@@ -61,37 +62,43 @@ class HandoverServer(Node):
         # self.readjust_offset = self.create_client(Empty, '/hsrb/wrist_wrench/readjust_offset')
         # while not self.readjust_offset.wait_for_service(timeout_sec = 5):
         #     self.get_logger().info("waiting for service: /hsrb/wrist_wrench/readjust_offset")
-        self.joint_control = self.create_client(SafeJointChange, '/change_joint')
+        self.cbgroup = MutuallyExclusiveCallbackGroup()
+
+        self.joint_control = self.create_client(SafeJointChange, '/change_joint', callback_group=self.cbgroup)
         while not self.joint_control.wait_for_service(timeout_sec = 5):
             self.get_logger().info("waiting for service: /change_joint")
         # Subscribe force torque sensor data from HSRB
         ft_sensor_topic = '/wrist_wrench/raw'
         self._wrist_wrench_sub = self.create_subscription(WrenchStamped, ft_sensor_topic, callback = self.__ft_sensor_cb, qos_profile=qos_profile_sensor_data)
-        self.declare_parameter('handover.use_fancy_handover', False)
+        self.declare_parameter('handover.use_fancy_handover', True)
         if self.has_parameter('handover.use_fancy_handover'):
             self.use_fancy_handover = self.get_parameter('handover.use_fancy_handover').value
         else:
             self.use_fancy_handover = True
 
+        self.get_logger().info(f"Using fancy handover: {self.use_fancy_handover}")
         # Wait for connection
-        while rclpy.ok() and self._force_data_x is None:
+        timeout_cnt = 0
+        while rclpy.ok() and self._force_data_x is None and timeout_cnt < 400:
             rclpy.spin_once(self, timeout_sec=0.1)
+            timeout_cnt += 1
 
         if self._force_data_x is None:
             raise RuntimeError('force torque sensor not received')
         
         self.get_logger().info("Handover server started")
 
-    def execute(self, goal_handle):
+    async def execute(self, goal_handle):
         self.get_logger().info('Received a new goal.')
         goal = goal_handle.request
 
         if goal.force_thresh > 0:
             self.force_thresh = goal.force_thresh
         #self.readjust_offset()
-        self.move_to_handover_position(goal.object_name)
-        while not self.finished:
-            time.sleep(0.5)
+        await self.move_to_handover_position(goal.object_name)
+
+        while rclpy.ok() and not self.finished:
+            rclpy.spin_once(self, timeout_sec=0.1)
 
         self.finished = False
         self.position_reached = False        
@@ -105,7 +112,7 @@ class HandoverServer(Node):
     def get_current_force(self):
         return [self._force_data_x, self._force_data_y, self._force_data_z]
     
-    def move_to_handover_position(self, object_name):
+    async def move_to_handover_position(self, object_name):
 
         if self.use_fancy_handover:
             self.whole_body.move_to_neutral()
@@ -119,7 +126,7 @@ class HandoverServer(Node):
             
             future = self.joint_control.call_async(req)
 
-            rclpy.spin_until_future_complete(self, future)
+            await future
 
             res = future.result()
 
@@ -156,9 +163,10 @@ class HandoverServer(Node):
     def __ft_sensor_cb(self, data):
         self._force_data_x = data.wrench.force.x
         self._force_data_y = data.wrench.force.y
-        self._force_data_z = data.wrench.force.z
+        self._force_data_z = data.wrench.force.z        
         if (abs(self._force_data_x) > self.force_thresh or abs(self._force_data_y) > self.force_thresh or abs(self._force_data_z) > self.force_thresh) \
             and self.position_reached and not self.finished:
+            self.get_logger().info(f"Force data: x={self._force_data_x}, y={self._force_data_y}, z={self._force_data_z}")
             self.gripper.command(1.0)
             self.finished = True
     
